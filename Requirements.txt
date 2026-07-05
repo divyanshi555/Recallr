@@ -10,6 +10,7 @@ ffmpeg-python>=0.2.0              # FFmpeg bindings (FFmpeg binary must be insta
 # ── Speech-to-Text (local Whisper) ────────────────────────────────────────────
 openai-whisper>=20231117          # OpenAI Whisper (runs locally)
 torch>=2.6.0                      # PyTorch backend for Whisper (2.6+ has official cp313 wheels)
+torchvision>=0.27.0
 numba>=0.60.0                     # Whisper dep left unpinned upstream; pin so the resolver doesn't grab an ancient build
 llvmlite>=0.43.0                  # numba's backend; old versions (<0.42) don't support Python 3.13 at all
 
