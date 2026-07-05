@@ -2,6 +2,8 @@ import whisper
 import os
 import requests
 from pydub import AudioSegment
+from dotenv import load_dotenv
+load_dotenv()
 
 # Sarvam's STT-Translate API rejects audio longer than 30s
 SARVAM_PIECE_SECONDS = 25
