@@ -5,7 +5,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
 CHROMA_DIR = "vector_db"
-COLLECTION_NAME = "meeting_transcript"
+COLLECTION_NAME = "video_transcript"
 EMBEDDING_MODEL  = "all-MiniLM-L6-v2"
 
 
