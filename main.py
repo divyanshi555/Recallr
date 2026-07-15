@@ -11,7 +11,7 @@ from core.rag_engine import build_rag_chain, ask_question
 load_dotenv()
 
 def run_pipeline(source :str, language :str = "english") -> dict:
-    print("\n🚀 Starting Meeting Recallr...\n")
+    print("\n🚀 Starting  Recallr...\n")
 
     # Step 1: Process input
     chunks = process_input(source)
@@ -46,7 +46,7 @@ def cli():
         if not source:
             print("❌ No source provided. Exiting.")
             sys.exit(1)
-
+        
         language = input("🌐 Language (english/hinglish) [default: english]: ").strip() or "english"
 
         result = run_pipeline(source, language)
@@ -60,7 +60,7 @@ def cli():
         print("=" * 60)
 
         # Interactive RAG chat
-        print("\n💬 Chat with your meeting / Youtube video (type 'exit' or 'quit'or 'q' to quit)\n")
+        print("\n💬 Chat with your Local video / Youtube video (type 'exit' or 'quit'or 'q' to quit)\n")
         rag_chain = result["rag_chain"]
 
         while True:
@@ -74,7 +74,7 @@ def cli():
             print(f"\n🤖 Recallr: {answer}\n")
 
     except KeyboardInterrupt:
-        print("\n⚠️ Interrupted by user. Exiting gracefully.")
+        print("\n⚠️ Interrupted by user. Exiting.")
         sys.exit(0)
     except Exception as e:
         print(f"\n Error: {e}")
