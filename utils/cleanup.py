@@ -1,7 +1,7 @@
 import os
 import shutil
 
-DOWNLOAD_DIR = "downloades"
+DOWNLOAD_DIR = "downloads"
 VECTOR_DB_DIR = "vector_db"
 
 
