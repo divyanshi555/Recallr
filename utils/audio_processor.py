@@ -2,8 +2,8 @@ import yt_dlp
 from pydub import AudioSegment
 import os
 
-DOWNLOAD_DIR = 'downloades'
-os.makedirs(DOWNLOAD_DIR,exist_ok = True)
+DOWNLOAD_DIR = 'downloads'
+
 
 '''
 Function: Download audio from a YouTube URL
@@ -40,7 +40,8 @@ Function: Convert any audio/video file to WAV format
  - Exports the processed audio as a WAV file
 '''
 def convert_to_wav(input_path: str) -> str:
-    output_path = os.path.splitext(input_path)[0] + "_converted.wav"
+    filename = os.path.splitext(os.path.basename(input_path))[0] + "_converted.wav"
+    output_path = os.path.join(DOWNLOAD_DIR, filename)
     audio = AudioSegment.from_file(input_path)
     audio = audio.set_channels(1).set_frame_rate(16000) #16khz
     audio.export(output_path, format="wav")
@@ -80,6 +81,7 @@ def chunk_audio(wav_path : str , chunk_minutes : int = 10) -> list:
 '''
 
 def process_input(source: str) -> list:
+    source = source.strip().strip('"').strip("'")
     if source.startswith("http://") or source.startswith("https://"):
         print("Detected YouTube URL. Downloading audio...")
         wav_path = download_youtube_audio(source)

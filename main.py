@@ -5,6 +5,7 @@ from core.transcriber import transcribe_all
 from core.summarizer import summarize, generate_title
 from core.extractor import extract_action_items, extract_key_decisions, extract_questions
 from core.rag_engine import build_rag_chain, ask_question
+from utils.cleanup import clean_workspace
 
 
 
@@ -42,6 +43,8 @@ def run_pipeline(source :str, language :str = "english") -> dict:
 
 def cli():
     try:
+        clean_workspace()
+        print("-" * 40)
         source = input("📂 Enter YouTube URL or local file path: ").strip()
         if not source:
             print("❌ No source provided. Exiting.")
