@@ -57,42 +57,6 @@ Context from  transcript:
 
     return rag_chain
 
-
-# Function: Load existing RAG chain from persisted vector store
-def load_rag_chain():
-    vector_store = load_vector_store()
-    retriever = get_retriever(vector_store,k=4)
-
-    llm = get_llm()
-    prompt = ChatPromptTemplate.from_messages([
-        (
-            "system",
-            """You are an expert meeting/seminar/discussion/scenario assistant. Answer the user's question 
-based ONLY on the transcript context provided below.
-
-If the answer is not found in the context, say: 
-"I could not find this information in the transcript."
-
-Always be concise and precise. If quoting someone, mention it clearly.
-
-Context from meeting transcript:
-{context}""",
-        ),
-        ("human", "{question}"),
-    ])
-
-    rag_chain = (
-        {
-            "context":  retriever| RunnableLambda(format_docs),
-            "question": RunnablePassthrough(),
-        }
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
-
-    return rag_chain
-
 # Function: Ask a question using the RAG chain
 def ask_question(rag_chain, question:str) -> str:
     print(f"Question : {question}")
