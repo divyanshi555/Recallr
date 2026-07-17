@@ -1,7 +1,6 @@
 # All the essential imports
 import streamlit as st
 import time
-import os
 from dotenv import load_dotenv
 from utils.audio_processor import process_input
 from core.transcriber import transcribe_all
@@ -92,27 +91,28 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Session state
-DEFAULT_STATE = {
-    "workspace_initialized": False,
-    "result": None,
-    "rag_chain": None,
-    "chat_history": [],
-    "pipeline_done": False,
-    "pipeline_steps": {},
-    "validation_error": False,
-}
+def default_state():
+    return {
+        "workspace_initialized": False,
+        "result": None,
+        "rag_chain": None,
+        "chat_history": [],
+        "pipeline_done": False,
+        "pipeline_steps": {},
+        "validation_error": False,
+    }
+
+
 # Setting the default session state
-for _key, _default in DEFAULT_STATE.items():
+for _key, _default in default_state().items():
     st.session_state.setdefault(_key, _default)
- 
-# Clearing the wrokspace to remove stale data if any
+
+# Clearing the workspace to remove stale data if any
 if not st.session_state.workspace_initialized:
     clean_workspace()
     st.session_state.workspace_initialized = True
 
-# Pipeline steps that are going to be displayed on sidebar when the it is running
- 
+# Pipeline steps that are going to be displayed on sidebar when it is running
 PIPELINE_STEPS = [
     ("audio", "Audio Ingestion", "Fetches and prepares audio from local paths or YouTube URLs instantly."),
     ("transcript", "Transcription", "Converts spoken audio into high-accuracy text."),
@@ -125,73 +125,76 @@ PIPELINE_STEPS = [
 STATE_ICON = {"done": "●", "active": "➔", "pending": "○"}
 STATE_CLASS = {"done": "step-done", "active": "step-active", "pending": "step-pending"}
 
-# Function:It renders the Pipeline steps on the sidebar
+
+# Function: It renders the Pipeline steps on the sidebar
 def render_pipeline_status():
-    for key, label,_ in PIPELINE_STEPS:
+    for key, label, _ in PIPELINE_STEPS:
         state = st.session_state.pipeline_steps.get(key, "pending")
         st.markdown(
             f'<div class="step-line {STATE_CLASS[state]}">{STATE_ICON[state]} {label}</div>',
             unsafe_allow_html=True,
         )
 
+
 # Function to set each step of pipeline
 def set_step(key, state):
     st.session_state.pipeline_steps[key] = state
 
-#Function:It resets the session when the user clicks Exit session
+
+# Function: It resets the session when the user clicks Clear Session
 def reset_session():
-    for key, default in DEFAULT_STATE.items():
+    for key, default in default_state().items():
         if key != "workspace_initialized":
             st.session_state[key] = default
 
-# Function to display Title and content of action-itmes,open-questions and key-decisions
+
+# Function to display Title and content of action-items, open-questions and key-decisions
 def info_card(title, content):
     with st.container(border=True):
         st.markdown(f"**{title}**")
         st.markdown(content)
 
-# Function:To activate the RAG pipleline
-def run_pipeline(source, language):
-    # These first 4 lines of this function are dead code as the default settings are set at the beginning of the session.
-    # They can be removed, but they are kept here becuase,if this app is upgraded to analyse another video in same session , then the pipeline should run fresh.
-    # Also for ensuring fresh start they are kept here.
 
+# Function: To activate the RAG pipeline
+def run_pipeline(source, language):
     st.session_state.pipeline_done = False
     st.session_state.result = None
     st.session_state.chat_history = []
     st.session_state.pipeline_steps = {}
- 
+
     progress = st.empty()
+    success = False
+
     try:
         with progress.container():
             st.info("Pipeline is active. You'll get the video's insights shortly.")
- 
+
         set_step("audio", "active")
         chunks = process_input(source)
         set_step("audio", "done")
- 
+
         set_step("transcript", "active")
         transcript = transcribe_all(chunks, language)
         set_step("transcript", "done")
- 
+
         set_step("title", "active")
         title = generate_title(transcript)
         set_step("title", "done")
- 
+
         set_step("summary", "active")
         summary = summarize(transcript)
         set_step("summary", "done")
- 
+
         set_step("extract", "active")
         action_items = extract_action_items(transcript)
         decisions = extract_key_decisions(transcript)
         questions = extract_questions(transcript)
         set_step("extract", "done")
- 
+
         set_step("rag", "active")
         rag_chain = build_rag_chain(transcript)
         set_step("rag", "done")
- 
+
         st.session_state.result = {
             "title": title,
             "transcript": transcript,
@@ -202,48 +205,53 @@ def run_pipeline(source, language):
         }
         st.session_state.rag_chain = rag_chain
         st.session_state.pipeline_done = True
- 
+
         progress.success("Pipeline activity completed.")
         time.sleep(0.5)
         progress.empty()
-        st.rerun()
- 
+        success = True
+
     except Exception as e:
-        for key, _ ,_ in PIPELINE_STEPS:
+        for key, _, _ in PIPELINE_STEPS:
             if st.session_state.pipeline_steps.get(key) == "active":
                 st.session_state.pipeline_steps[key] = "pending"
         progress.error(f"Execution Error: {e}")
- 
+
+    if success:
+        st.rerun()
+
 
 # Sidebar that takes File-path or url as input and shows analyze button that activates the RAG Pipeline
-# After the Pipeline completes,It shows the Pipeline activity and Exit session button to clear the current session and exit it.
+# After the Pipeline completes, it shows the Pipeline activity and Clear Session button to reset the current session.
 with st.sidebar:
     st.markdown(
         '<h1 style="padding:0;margin:0;font-weight:700;">Recallr<span style="color:#00bfff;">.</span></h1>',
         unsafe_allow_html=True,
     )
     st.markdown("---")
- 
+
     if st.session_state.pipeline_done:
         st.markdown("**Pipeline Activity**")
         render_pipeline_status()
         st.markdown("---")
-        if st.button("Exit Session", use_container_width=True, type="primary"):
-            st.toast("Exiting the session gracefully.To use the app again,start it on Terminal")
+        if st.button("Clear Session", use_container_width=True, type="primary"):
+            st.toast("Clearing current session")
+            st.session_state.rag_chain = None
+            clean_workspace()
             reset_session()
             time.sleep(0.5)
-            os._exit(0)
+            st.rerun()
     else:
         source = st.text_input("YouTube URL or File Path", placeholder="Paste source link or local file path.")
         language = st.selectbox("Choose Language", ["english", "hinglish"], index=0)
         st.markdown("##")
         run_clicked = st.button("Analyse", use_container_width=True, type="primary")
- 
+
         if st.session_state.pipeline_steps:
             st.markdown("---")
             st.markdown("**Pipeline Activity**")
             render_pipeline_status()
- 
+
         if run_clicked:
             if not source.strip():
                 st.session_state.validation_error = True
@@ -252,17 +260,17 @@ with st.sidebar:
                 st.session_state.validation_error = False
                 run_pipeline(source, language)
 
-# Main Area 
+# Main Area
 # 1) Before the Pipeline activation, it shows the Home screen
-# 2) After the Pipeline completes,it shows the summary,Original Transcript,action-items,Key decisions,Open questions and Chatbot that answers user queries
+# 2) After the Pipeline completes, it shows the summary, Original Transcript, action-items, Key decisions, Open questions and Chatbot that answers user queries
 
 if st.session_state.result:
     r = st.session_state.result
- 
+
     st.markdown('<div class="hero-title">Recallr<span class="hero-accent">.</span></div>', unsafe_allow_html=True)
     st.subheader(r["title"])
     st.markdown("##")
- 
+
     col1, col2 = st.columns([3, 2], gap="large")
     with col1:
         with st.container(border=True):
@@ -271,7 +279,7 @@ if st.session_state.result:
     with col2:
         with st.expander("🔍 Review Ingested Transcript Lines", expanded=False):
             st.markdown(r["transcript"])
- 
+
     st.markdown("##")
     for col, (title, content) in zip(
         st.columns(3, gap="medium"),
@@ -283,15 +291,15 @@ if st.session_state.result:
     ):
         with col:
             info_card(title, content)
- 
+
     st.markdown("---")
     st.markdown("### 💬 Ask anything about the video")
     st.markdown("##")
- 
+
     for msg in st.session_state.chat_history:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
- 
+
     user_input = st.chat_input("Query")
     if user_input:
         st.session_state.chat_history.append({"role": "user", "content": user_input})
@@ -302,28 +310,28 @@ if st.session_state.result:
                 answer = ask_question(st.session_state.rag_chain, user_input)
             st.markdown(answer)
         st.session_state.chat_history.append({"role": "assistant", "content": answer})
- 
+
     if st.session_state.chat_history:
         st.markdown("##")
         if st.button("Clear Chat", type="secondary"):
             st.session_state.chat_history = []
             st.rerun()
- 
+
 else:
     st.markdown('<div class="hero-title">Recallr<span class="hero-accent">.</span></div>', unsafe_allow_html=True)
     st.markdown('<div class="tagline">Stop taking notes. Start capturing intelligence.</div>', unsafe_allow_html=True)
- 
+
     st.markdown("### What Recallr Does?")
     st.markdown(
         "Recallr converts YouTube videos and local video files into interactive knowledge sources. "
         "It generates summaries and allows users to ask questions and get context-aware answers from the video content."
     )
- 
+
     if st.session_state.validation_error:
         st.error("Please provide a valid YouTube URL or local machine path for analysis.")
     else:
         st.info("💡 **Ready to begin?** Insert a valid YouTube URL or local file path inside the sidebar on the left to activate the system.")
- 
+
     st.markdown("### Tactical Engine Workflow")
     workflow_cols = st.columns(3, gap="medium")
     for i, (_, label, desc) in enumerate(PIPELINE_STEPS):
@@ -337,7 +345,7 @@ else:
                 """,
                 unsafe_allow_html=True,
             )
- 
+
     st.markdown("---")
     for col, (title, caption) in zip(
         st.columns(3, gap="medium"),

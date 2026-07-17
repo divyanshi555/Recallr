@@ -61,7 +61,7 @@ Context from  transcript:
 # Function: Load existing RAG chain from persisted vector store
 def load_rag_chain():
     vector_store = load_vector_store()
-    retriver = get_retriever()
+    retriever = get_retriever(vector_store,k=4)
 
     llm = get_llm()
     prompt = ChatPromptTemplate.from_messages([
@@ -83,7 +83,7 @@ Context from meeting transcript:
 
     rag_chain = (
         {
-            "context":  retriver| RunnableLambda(format_docs),
+            "context":  retriever| RunnableLambda(format_docs),
             "question": RunnablePassthrough(),
         }
         | prompt
